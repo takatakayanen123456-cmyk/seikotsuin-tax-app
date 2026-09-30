@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>整骨院・接骨院の青色申告・確定申告｜複式簿記帳簿アプリ</title>
+
+    <!-- PWA & Mobile Web App Meta -->
+    <meta name="theme-color" content="#047857">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="整骨院帳簿">
+    <meta name="description" content="施術所専用の複式簿記・確定申告・レセコンCSV取込・青色申告帳簿アプリ">
+
+    <!-- App Icon (SVG Data URI) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23047857'/><path fill='%23ffffff' d='M256 80c-22.1 0-40 17.9-40 40v96H120c-22.1 0-40 17.9-40 40s17.9 40 40 40h96v96c0 22.1 17.9 40 40 40s40-17.9 40-40V296h96c22.1 0 40-17.9 40-40s-17.9-40-40-40H296V120c0-22.1-17.9-40-40-40z'/></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23047857'/><path fill='%23ffffff' d='M256 80c-22.1 0-40 17.9-40 40v96H120c-22.1 0-40 17.9-40 40s17.9 40 40 40h96v96c0 22.1 17.9 40 40 40s40-17.9 40-40V296h96c22.1 0 40-17.9 40-40s-17.9-40-40-40H296V120c0-22.1-17.9-40-40-40z'/></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding-bottom: calc(70px + env(safe-area-inset-bottom));
+            padding-top: env(safe-area-inset-top);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        input, select, textarea {
+            user-select: auto;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 10;
+        }
+        .sticky-col-header {
+            position: sticky;
+            left: 0;
+            background-color: #f8fafc;
+            z-index: 10;
+        }
+
+        /* 印刷用スタイル (決算書提出・保管用) */
+        @media print {
+            header, nav, #top-notice-bar, #banner-ad, .no-print, button, form, .preset-section {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                padding-bottom: 0 !important;
+                padding-top: 0 !important;
+            }
+            main {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .tab-content {
+                display: block !important;
+            }
+            .card-box {
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+                margin-bottom: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- データ保存に関する重要通知バナー -->
+    <div id="top-notice-bar" class="bg-amber-500 text-slate-900 text-xs font-bold py-2 px-4 flex justify-between items-center shadow-inner no-print">
+        <div class="max-w-5xl mx-auto w-full flex items-center justify-between">
+            <span class="flex items-center truncate">
+                <i class="fa-solid fa-triangle-exclamation text-amber-900 mr-2 text-sm flex-shrink-0"></i>
+                <span class="truncate">【重要】データは端末内に保存されます。定期的なバックアップやGAS連携を推奨します。</span>
+            </span>
+            <button onclick="switchTab('journal')" class="underline bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-[11px] flex-shrink-0 ml-2 transition">
+                バックアップ方法
+            </button>
+        </div>
+    </div>
+
+    <!-- ヘッダー -->
+    <header class="bg-brand-700 text-white shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-notes-medical text-2xl text-brand-100"></i>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">整骨院・接骨院 青色申告・確定申告</h1>
+                    <p class="text-xs text-brand-100">施術所専用 複式簿記・療養費・帳簿決算</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span id="sync-status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-600 text-slate-200 shadow-sm">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>同期: OFF
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- タブナビゲーション -->
+    <nav class="bg-white border-b border-slate-200 sticky top-[57px] z-20 shadow-sm no-print">
+        <div class="max-w-5xl mx-auto flex overflow-x-auto text-sm font-medium">
+            <button onclick="switchTab('input')" id="tab-btn-input" class="tab-btn flex-1 min-w-[80px] py-3 text-center border-b-2 border-brand-600 text-brand-700 font-bold hover:bg-slate-50 transition">
+                <i class="fa-solid fa-pen-to-square block text-base mb-1"></i>入力
+            </button>
+            <button onclick="switchTab('import')" id="tab-btn-import" class="tab-btn flex-1 min-w-[80px] py-3 text-center border-b-2 border-transparent text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition">
+                <i class="fa-solid fa-file-arrow-up block text-base mb-1"></i>レセコン取込
+            </button>
+            <button onclick="switchTab('journal')" id="tab-btn-journal" class="tab-btn flex-1 min-w-[80px] py-3 text-center border-b-2 border-transparent text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition">
+                <i class="fa-solid fa-book block text-base mb-1"></i>仕訳帳
+            </button>
+            <button onclick="switchTab('report')" id="tab-btn-report" class="tab-btn flex-1 min-w-[80px] py-3 text-center border-b-2 border-transparent text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition">
+                <i class="fa-solid fa-chart-pie block text-base mb-1"></i>決算書
+            </button>
+            <button onclick="switchTab('accounts')" id="tab-btn-accounts" class="tab-btn flex-1 min-w-[80px] py-3 text-center border-b-2 border-transparent text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition">
+                <i class="fa-solid fa-list-check block text-base mb-1"></i>科目設定
+            </button>
+            <button onclick="switchTab('gas')" id="tab-btn-gas" class="tab-btn flex-1 min-w-[80px] py-3 text-center border-b-2 border-transparent text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition">
+                <i class="fa-brands fa-google-drive block text-base mb-1"></i>GAS連携
+            </button>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6">
+
+        <!-- 1. かんたん入力 / 直接仕訳入力 -->
+        <section id="tab-input" class="tab-content active space-y-6">
+            <!-- 1タッププリセット -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box preset-section">
+                <h2 class="text-base font-bold text-slate-800 mb-3 flex items-center">
+                    <i class="fa-solid fa-bolt text-amber-500 mr-2"></i>整骨院ワンタッププリセット
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button onclick="applyPreset('窓口現金売上')" class="p-2.5 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg text-left transition group">
+                        <div class="text-xs text-brand-700 font-semibold mb-0.5">日次売上</div>
+                        <div class="text-sm font-bold text-slate-800">窓口現金売上</div>
+                    </button>
+                    <button onclick="applyPreset('窓口クレカ売上')" class="p-2.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg text-left transition">
+                        <div class="text-xs text-sky-700 font-semibold mb-0.5">窓口決済</div>
+                        <div class="text-sm font-bold text-slate-800"><i class="fa-regular fa-credit-card mr-1"></i>窓口クレカ売上</div>
+                    </button>
+                    <button onclick="applyPreset('キャッシュレス自費売上')" class="p-2.5 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg text-left transition">
+                        <div class="text-xs text-cyan-700 font-semibold mb-0.5">自費決済</div>
+                        <div class="text-sm font-bold text-slate-800">自費PayPay/QR売上</div>
+                    </button>
+                    <button onclick="applyPreset('クレカ振込入金')" class="p-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-left transition">
+                        <div class="text-xs text-blue-700 font-semibold mb-0.5">入金処理</div>
+                        <div class="text-sm font-bold text-slate-800">クレカ売掛振込</div>
+                    </button>
+                    <button onclick="applyPreset('療養費請求（月末）')" class="p-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-left transition">
+                        <div class="text-xs text-indigo-700 font-semibold mb-0.5">月末処理</div>
+                        <div class="text-sm font-bold text-slate-800">療養費請求（レセ）</div>
+                    </button>
+                    <button onclick="applyPreset('療養費振込入金')" class="p-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-left transition">
+                        <div class="text-xs text-emerald-700 font-semibold mb-0.5">入金処理</div>
+                        <div class="text-sm font-bold text-slate-800">療養費振込入金</div>
+                    </button>
+                    <button onclick="applyPreset('衛生材料費仕入')" class="p-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-left transition">
+                        <div class="text-xs text-amber-700 font-semibold mb-0.5">経費</div>
+                        <div class="text-sm font-bold text-slate-800">テーピング・包帯</div>
+                    </button>
+                    <button onclick="applyPreset('店舗家賃')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-left transition">
+                        <div class="text-xs text-slate-600 font-semibold mb-0.5">固定費</div>
+                        <div class="text-sm font-bold text-slate-800">店舗家賃支払</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 仕訳入力フォーム -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-plus-circle text-brand-600 mr-2"></i>複式簿記 仕訳伝票入力
+                    </h2>
+                    <span id="edit-indicator" class="hidden bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">
+                        <i class="fa-solid fa-pen mr-1"></i>編集中
+                    </span>
+                </div>
+
+                <form id="journal-form" onsubmit="handleJournalSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="entry-id" value="">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">日付</label>
+                            <input type="date" id="entry-date" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">金額 (円)</label>
+                            <input type="number" id="entry-amount" placeholder="0" min="1" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-brand-700 mb-1"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i>借方科目（左）</label>
+                            <select id="entry-debit" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- 動的読み込み -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-blue-700 mb-1"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i>貸方科目（右）</label>
+                            <select id="entry-credit" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- 動的読み込み -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">摘要・メモ</label>
+                        <input type="text" id="entry-desc" placeholder="例: Visa/Master窓口カード支払い分、Airペイ入金など" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+
+                    <div class="flex space-x-3 pt-2">
+                        <button type="submit" id="btn-save" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-lg shadow transition flex items-center justify-center">
+                            <i class="fa-solid fa-check mr-2"></i>仕訳を登録する
+                        </button>
+                        <button type="button" id="btn-cancel" onclick="resetForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-lg transition">
+                            キャンセル
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- 2. レセコン CSV 一括インポート -->
+        <section id="tab-import" class="tab-content space-y-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4 card-box">
+                <div class="border-b pb-3 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-file-arrow-up text-brand-600 mr-2"></i>レセコン CSV 一括インポート
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">あらゆるレセコン（メディカルランド, 互助会, 補正システム等）の売上CSVに対応。和暦（R6.9.25）や日本語日付も自動変換します。</p>
+                    </div>
+                    <button onclick="openRececonGuide()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center flex-shrink-0 ml-2 shadow-sm">
+                        <i class="fa-solid fa-circle-question mr-1 text-sm text-brand-600"></i>使い方ガイド
+                    </button>
+                </div>
+
+                <!-- ステップ1: ファイル選択 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <label class="block text-xs font-bold text-slate-700">1. レセコン売上CSVファイルを選択</label>
+                    <input type="file" id="csv-file-input" accept=".csv" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer">
+                </div>
+
+                <!-- ステップ2: 列マッピング設定 -->
+                <div id="mapping-container" class="hidden bg-brand-50/50 p-4 rounded-xl border border-brand-200 space-y-4">
+                    <h3 class="text-xs font-bold text-brand-900 flex items-center">
+                        <i class="fa-solid fa-columns mr-1.5 text-brand-600"></i>2. 列の紐付けマッピング設定
+                    </h3>
+                    <p class="text-[11px] text-slate-600">CSVの1行目（ヘッダー）を検出しました。各項目に該当する列を選択してください。</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">【日付】の列 <span class="text-rose-500">*</span></label>
+                            <select id="map-col-date" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">【窓口収入】の列（現金など）</label>
+                            <select id="map-col-window" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">【保険請求額】の列（レセ請求）</label>
+                            <select id="map-col-insurance" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">【自費診療】の列（任意）</label>
+                            <select id="map-col-self" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></select>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button onclick="executeCsvImport()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow transition text-xs flex items-center justify-center">
+                            <i class="fa-solid fa-cloud-arrow-down mr-2"></i>指定した列で一括インポートを実行する
+                        </button>
+                    </div>
+                </div>
+
+                <!-- プレビューテーブル -->
+                <div id="csv-preview-wrapper" class="hidden space-y-2">
+                    <h3 class="text-xs font-bold text-slate-700">CSV読み込みプレビュー (先頭5行)</h3>
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left text-xs border-collapse" id="csv-preview-table">
+                            <!-- プレビュー内容 -->
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 仕訳帳・履歴＆バックアップ機能 -->
+        <section id="tab-journal" class="tab-content space-y-4">
+            <!-- バックアップ・復元専用カード -->
+            <div class="bg-amber-50/80 p-5 rounded-xl border border-amber-200 shadow-sm space-y-3 card-box">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-amber-900 flex items-center">
+                        <i class="fa-solid fa-shield-halved text-amber-600 mr-2"></i>データ保存とバックアップ (重要)
+                    </h2>
+                    <span class="text-[11px] bg-amber-200/80 text-amber-900 font-bold px-2 py-0.5 rounded">端末保存形式</span>
+                </div>
+                <p class="text-xs text-amber-800 leading-relaxed">
+                    本アプリの入力データはご使用のブラウザ内にのみ保存されます。キャッシュ消去や機種変更による消失を防ぐため、定期的にバックアップ保存（ファイル出力）を行ってください。
+                </p>
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <button onclick="exportJSONBackup()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 px-3.5 rounded-lg transition flex items-center shadow-sm">
+                        <i class="fa-solid fa-download mr-1.5"></i>バックアップファイルを出力 (JSON)
+                    </button>
+                    <label class="bg-white hover:bg-slate-50 text-amber-900 border border-amber-300 text-xs font-bold py-2 px-3.5 rounded-lg cursor-pointer transition flex items-center shadow-sm">
+                        <i class="fa-solid fa-upload mr-1.5 text-amber-600"></i>バックアップから復元
+                        <input type="file" id="json-restore-input" accept=".json" onchange="importJSONBackup(event)" class="hidden">
+                    </label>
+                    <button onclick="switchTab('gas')" class="bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold py-2 px-3.5 rounded-lg transition flex items-center shadow-sm ml-auto">
+                        <i class="fa-brands fa-google-drive mr-1.5"></i>スプレッドシート自動保存を設定
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-list-ol text-brand-600 mr-2"></i>仕訳帳・全履歴
+                    </h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition flex items-center">
+                            <i class="fa-solid fa-file-csv mr-1.5"></i>CSV形式で出力
+                        </button>
+                        <button onclick="confirmClearAll()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold py-2 px-3 rounded-lg transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i>全データ消去
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 検索・フィルター -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">キーワード検索</label>
+                        <input type="text" id="search-keyword" oninput="renderJournal()" placeholder="摘要・科目名..." class="w-full border border-slate-300 rounded-md p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">開始日</label>
+                        <input type="date" id="search-start-date" onchange="renderJournal()" class="w-full border border-slate-300 rounded-md p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">終了日</label>
+                        <input type="date" id="search-end-date" onchange="renderJournal()" class="w-full border border-slate-300 rounded-md p-2 text-xs">
+                    </div>
+                </div>
+
+                <!-- テーブル -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                                <th class="p-2.5 font-bold">日付</th>
+                                <th class="p-2.5 font-bold">借方科目</th>
+                                <th class="p-2.5 font-bold text-right">金額</th>
+                                <th class="p-2.5 font-bold">貸方科目</th>
+                                <th class="p-2.5 font-bold">摘要</th>
+                                <th class="p-2.5 font-bold text-center no-print">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journal-table-body" class="divide-y divide-slate-100">
+                            <!-- 履歴読み込み -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 決算レポート (P/L・B/S・月次推移表) -->
+        <section id="tab-report" class="tab-content space-y-6">
+            <!-- 期間フィルター & 印刷ボタン -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3 card-box">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-filter text-brand-600"></i>
+                    <span class="text-sm font-bold text-slate-700">集計対象期間:</span>
+                    <select id="report-year" onchange="renderReports()" class="border border-slate-300 rounded-md p-1.5 text-xs font-bold">
+                        <!-- 動的設定 -->
+                    </select>
+                    <select id="report-month" onchange="renderReports()" class="border border-slate-300 rounded-md p-1.5 text-xs font-bold">
+                        <option value="all">全期間 (年間)</option>
+                        <option value="01">1月</option>
+                        <option value="02">2月</option>
+                        <option value="03">3月</option>
+                        <option value="04">4月</option>
+                        <option value="05">5月</option>
+                        <option value="06">6月</option>
+                        <option value="07">7月</option>
+                        <option value="08">8月</option>
+                        <option value="09">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </div>
+                <div class="no-print">
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 px-4 rounded-lg transition flex items-center shadow">
+                        <i class="fa-solid fa-print mr-2"></i>決算書印刷・PDF出力
+                    </button>
+                </div>
+            </div>
+
+            <!-- 科目別 月次推移表 -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4 card-box">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-table-cells text-brand-600 mr-2"></i>科目別 月次推移表
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">年間全体の1月〜12月の推移と科目別小計</p>
+                    </div>
+                    <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200 flex items-center no-print">
+                        <i class="fa-solid fa-arrows-left-right mr-1"></i>横スクロール対応
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left text-xs border-collapse min-w-[900px]">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                <th class="p-2.5 font-bold sticky-col-header w-36 shadow-sm">勘定科目</th>
+                                <th class="p-2.5 font-bold text-right">1月</th>
+                                <th class="p-2.5 font-bold text-right">2月</th>
+                                <th class="p-2.5 font-bold text-right">3月</th>
+                                <th class="p-2.5 font-bold text-right">4月</th>
+                                <th class="p-2.5 font-bold text-right">5月</th>
+                                <th class="p-2.5 font-bold text-right">6月</th>
+                                <th class="p-2.5 font-bold text-right">7月</th>
+                                <th class="p-2.5 font-bold text-right">8月</th>
+                                <th class="p-2.5 font-bold text-right">9月</th>
+                                <th class="p-2.5 font-bold text-right">10月</th>
+                                <th class="p-2.5 font-bold text-right">11月</th>
+                                <th class="p-2.5 font-bold text-right">12月</th>
+                                <th class="p-2.5 font-bold text-right bg-slate-200/70">年間合計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthly-matrix-body" class="divide-y divide-slate-100">
+                            <!-- JS動的レンダリング -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- P/L 損益計算書 -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i>損益計算書 (P/L)
+                    </h2>
+                    <span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold">青色申告決算書対応</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 pb-1 border-b">売上の部（収入）</h3>
+                        <table class="w-full text-xs">
+                            <tbody id="pl-revenue-body" class="divide-y divide-slate-100"></tbody>
+                            <tfoot>
+                                <tr class="font-bold border-t border-slate-300 bg-slate-50 text-slate-800">
+                                    <td class="p-2">売上高 合計</td>
+                                    <td id="pl-total-revenue" class="p-2 text-right text-emerald-700">¥0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 pb-1 border-b">必要経費の部</h3>
+                        <table class="w-full text-xs">
+                            <tbody id="pl-expenses-body" class="divide-y divide-slate-100"></tbody>
+                            <tfoot>
+                                <tr class="font-bold border-t border-slate-300 bg-slate-50 text-slate-800">
+                                    <td class="p-2">必要経費 合計</td>
+                                    <td id="pl-total-expenses" class="p-2 text-right text-rose-700">¥0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 差引所得 ＆ 青色申告特別控除シミュレーション -->
+                <div class="mt-6 p-4 bg-brand-50 rounded-lg border border-brand-200 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs text-brand-800 font-bold block">差引所得金額（青色申告特別控除前所得）</span>
+                            <span class="text-xs text-slate-500">※ 売上高合計 － 必要経費合計</span>
+                        </div>
+                        <span id="pl-net-income" class="text-xl font-extrabold text-brand-700">¥0</span>
+                    </div>
+
+                    <div class="border-t border-brand-200 pt-3 flex flex-wrap justify-between items-center text-xs gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-slate-700">青色申告特別控除額:</span>
+                            <select id="blue-deduction-select" onchange="renderReports()" class="border border-brand-300 rounded p-1 font-bold bg-white text-slate-800">
+                                <option value="650000">65万円控除 (e-Tax提出/複式簿記)</option>
+                                <option value="550000">55万円控除 (書面提出/複式簿記)</option>
+                                <option value="100000">10万円控除 (簡易簿記)</option>
+                                <option value="0">なし (白色申告)</option>
+                            </select>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-600 block">課税対象 推定所得金額:</span>
+                            <span id="taxable-income-result" class="text-base font-extrabold text-slate-800">¥0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B/S 貸借対照表 -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-scale-balanced text-indigo-600 mr-2"></i>貸借対照表 (B/S)
+                    </h2>
+                    <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-bold">期末時点</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 pb-1 border-b">資産の部</h3>
+                        <table class="w-full text-xs">
+                            <tbody id="bs-assets-body" class="divide-y divide-slate-100"></tbody>
+                            <tfoot>
+                                <tr class="font-bold border-t border-slate-300 bg-slate-50 text-slate-800">
+                                    <td class="p-2">資産 合計</td>
+                                    <td id="bs-total-assets" class="p-2 text-right text-indigo-700">¥0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 pb-1 border-b">負債・事業主勘定・元本</h3>
+                        <table class="w-full text-xs">
+                            <tbody id="bs-liabilities-body" class="divide-y divide-slate-100"></tbody>
+                            <tfoot>
+                                <tr class="font-bold border-t border-slate-300 bg-slate-50 text-slate-800">
+                                    <td class="p-2">負債・資本 合計</td>
+                                    <td id="bs-total-liabilities" class="p-2 text-right text-indigo-700">¥0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. 勘定科目カスタマイズ -->
+        <section id="tab-accounts" class="tab-content space-y-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-tags text-brand-600 mr-2"></i>勘定科目の管理・カスタマイズ
+                    </h2>
+                    <button onclick="resetAccountMaster()" class="text-xs text-slate-500 hover:text-slate-700 underline">
+                        初期設定に戻す
+                    </button>
+                </div>
+
+                <form onsubmit="handleAddAccount(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">科目分類</label>
+                        <select id="new-account-type" class="w-full border border-slate-300 rounded-md p-2 text-xs">
+                            <option value="売上">売上（収入）</option>
+                            <option value="経費">必要経費</option>
+                            <option value="資産">資産</option>
+                            <option value="負債">負債</option>
+                            <option value="資本">事業主勘定・資本</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">勘定科目名</label>
+                        <input type="text" id="new-account-name" placeholder="例: 学会参加費" required class="w-full border border-slate-300 rounded-md p-2 text-xs">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold p-2.5 rounded-md transition">
+                            <i class="fa-solid fa-plus mr-1"></i>科目を追加
+                        </button>
+                    </div>
+                </form>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="account-lists-container"></div>
+            </div>
+        </section>
+
+        <!-- 6. GAS・Google Drive 連携ガイド -->
+        <section id="tab-gas" class="tab-content space-y-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 card-box">
+                <div class="border-b pb-3 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center">
+                            <i class="fa-brands fa-google-drive text-emerald-600 mr-2"></i>Google スプレッドシート自動転送設定 (GAS)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">クラウド（Googleスプレッドシート）への自動保存・リアルタイム同期機能</p>
+                    </div>
+                    <button onclick="openGasGuide()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center flex-shrink-0 ml-2 shadow-sm">
+                        <i class="fa-solid fa-circle-question mr-1 text-sm text-brand-600"></i>使い方ガイド
+                    </button>
+                </div>
+
+                <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg my-4 text-xs text-emerald-800 leading-relaxed">
+                    <i class="fa-solid fa-shield-check text-emerald-600 mr-1.5"></i>
+                    <strong>おすすめ：</strong>GAS連携を設定しておくと、入力するたびに自動でGoogleスプレッドシート（クラウド上）へ保存されるため、スマホの故障やアプリ削除時もデータが安全に保護されます。
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">GAS WebアプリURL</label>
+                        <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="w-full border border-slate-300 rounded-md p-2 text-xs font-mono">
+                    </div>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <label class="flex items-center cursor-pointer text-xs font-bold text-slate-700">
+                            <input type="checkbox" id="gas-auto-sync" onchange="toggleAutoSync(this.checked)" class="rounded text-brand-600 focus:ring-brand-500 mr-2">
+                            仕訳追加時にリアルタイム自動転送する
+                        </label>
+                        <button onclick="saveGasSettings()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-md transition shadow-sm">
+                            設定を保存
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-sm font-bold text-slate-800 border-b pb-2">導入手順（5分で完了）</h3>
+                    <ol class="list-decimal list-inside text-xs text-slate-600 space-y-2 leading-relaxed">
+                        <li>Googleスプレッドシートを新規作成します。</li>
+                        <li>メニューの <strong>「拡張機能」 &gt; 「Apps Script」</strong> を開きます。</li>
+                        <li>表示されたコードエディタに、下記のスクリプトをすべてコピー＆ペーストします。</li>
+                        <li>右上 <strong>「デプロイ」 &gt; 「新しいデプロイ」</strong> をクリック。</li>
+                        <li>種類を <strong>「ウェブアプリ」</strong> に選択し、アクセスできるユーザーを <strong>「全員 (Anyone)」</strong> に変更してデプロイします。</li>
+                        <li>発行された <strong>「ウェブアプリ URL」</strong> をコピーして、上記の入力欄に貼り付けて保存してください。</li>
+                    </ol>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between items-center bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg">
+                            <span class="text-xs font-mono">Google Apps Script (Code.gs)</span>
+                            <button onclick="copyGasCode()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition">
+                                <i class="fa-regular fa-copy mr-1"></i>コードをコピー
+                            </button>
+                        </div>
+                        <pre id="gas-code-block" class="bg-slate-900 text-emerald-400 p-4 rounded-b-lg text-xs font-mono overflow-x-auto leading-normal">
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["ID", "日付", "借方科目", "金額", "貸方科目", "摘要"]);
+  }
+  
+  sheet.appendRow([
+    data.id,
+    data.date,
+    data.debit,
+    data.amount,
+    data.credit,
+    data.desc
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({"result": "success"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+                        </pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 同業の先生・スタッフにシェアセクション -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center space-y-3 mt-6 card-box no-print">
+            <h3 class="text-sm font-bold text-slate-700">同業の先生・スタッフにアプリを共有</h3>
+            <div class="flex justify-center">
+                <button onclick="shareToLine()" class="bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3 px-6 rounded-xl shadow transition duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base">
+                    <i class="fa-solid fa-share-nodes text-lg"></i>
+                    <span>LINEで同業の先生・スタッフにシェア</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 固定バナー広告枠 -->
+    <div id="banner-ad" class="fixed bottom-0 left-0 right-0 bg-slate-900 text-white border-t border-slate-700 z-40 py-2 px-4 shadow-lg no-print">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3 overflow-hidden">
+                <span class="bg-amber-500 text-black font-extrabold text-[10px] px-1.5 py-0.5 rounded flex-shrink-0">スポンサー</span>
+                <p class="text-xs truncate text-slate-200">
+                    <span class="font-bold text-amber-400">【整骨院経営者必見】</span> レセプト請求ソフト・集客対策サービスのご案内
+                </p>
+            </div>
+            <button onclick="showToast('スポンサー広告リンクを開きます（デモ）', 'info')" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-3 py-1.5 rounded flex-shrink-0 ml-2">
+                詳細を見る
+            </button>
+        </div>
+    </div>
+
+    <!-- 初回起動時・データ保存と複数端末利用の親切案内モーダル -->
+    <div id="notice-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative border border-amber-200">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-800">データ保存と複数端末のご利用について</h3>
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-xl text-xs text-amber-900 space-y-2.5 border border-amber-200/80 leading-relaxed">
+                <p class="font-bold text-amber-950 flex items-center text-sm">
+                    <i class="fa-solid fa-circle-info text-amber-600 mr-1.5"></i>安心してご利用いただくために
+                </p>
+                <ul class="space-y-2 text-slate-700">
+                    <li class="flex items-start">
+                        <i class="fa-solid fa-hard-drive text-amber-600 mt-0.5 mr-2 flex-shrink-0"></i>
+                        <span><strong>端末内保存（初期状態）:</strong> 入力データはお使いの端末（ブラウザ）内に保存されます。キャッシュ消去やアプリ削除の前に「仕訳帳」タブからバックアップ保存を行ってください。</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa-brands fa-google-drive text-emerald-600 mt-0.5 mr-2 flex-shrink-0"></i>
+                        <span><strong>PC・スマホのデータ共有:</strong> パソコンとスマホなど複数の端末で同じ帳簿データをリアルタイム同期したい場合は、<strong>「GAS連携」</strong>を設定していただくと大変便利です。</span>
+                    </li>
+                </ul>
+            </div>
+
+            <p class="text-[11px] text-slate-500 text-center leading-normal">
+                画面上の「GAS連携」タブから簡単にGoogleスプレッドシートへの無料自動同期を設定できます。
+            </p>
+
+            <div class="pt-1 space-y-2">
+                <button onclick="closeNoticeModal(true)" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl shadow transition text-xs">
+                    了解しました（次回から表示しない）
+                </button>
+                <button onclick="closeNoticeModal(false)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- カスタム確認ダイアログ モーダル -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center border border-slate-200">
+            <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-lg">
+                <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <h3 id="confirm-modal-title" class="text-sm font-extrabold text-slate-800">確認</h3>
+            <p id="confirm-modal-msg" class="text-xs text-slate-600 leading-relaxed"></p>
+            <div class="flex space-x-2 pt-2">
+                <button id="confirm-modal-btn-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-lg transition">
+                    キャンセル
+                </button>
+                <button id="confirm-modal-btn-ok" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 rounded-lg transition shadow-sm">
+                    実行する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知コンテナ -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none no-print"></div>
+
+    <!-- レセコン取込 使い方ガイド モーダル -->
+    <div id="rececon-guide-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-extrabold text-slate-800 flex items-center">
+                    <i class="fa-solid fa-file-circle-question text-brand-600 mr-2 text-lg"></i>レセコンCSV取込 使い方ガイド
+                </h3>
+                <button onclick="closeRececonGuide()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-700 leading-relaxed">
+                <p class="bg-brand-50 text-brand-900 p-3 rounded-lg border border-brand-200">
+                    レセコン（メディカルランド、互助会、補正システム等）から出力した月次・日次売上CSVを取り込むことで、日々の手入力を省略して自動で複式簿記の仕訳を作成できます。
+                </p>
+
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-800 text-sm border-l-4 border-brand-600 pl-2">簡単4ステップの流れ</h4>
+                    
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">1</span>
+                        <div>
+                            <p class="font-bold text-slate-800">レセコンから売上CSVを出力</p>
+                            <p class="text-slate-500">お使いのレセコンソフトの管理画面から「集計データ」「売上データ」「月報」等のCSVファイルをダウンロードします。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">2</span>
+                        <div>
+                            <p class="font-bold text-slate-800">ファイルを選択</p>
+                            <p class="text-slate-500">「1. レセコン売上CSVファイルを選択」ボタンから出力したCSVファイルを選択します。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">3</span>
+                        <div>
+                            <p class="font-bold text-slate-800">列の紐付け（マッピング）</p>
+                            <p class="text-slate-500">自動検出されたCSVの項目名の中から、「日付」「窓口収入」「保険請求額」に該当する列を選択します。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">4</span>
+                        <div>
+                            <p class="font-bold text-slate-800">一括インポートを実行</p>
+                            <p class="text-slate-500">「一括インポートを実行する」を押すと、指定した列の内容で自動的に複式仕訳が作成され仕訳帳に登録されます。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-1">
+                    <p class="font-bold text-amber-900 flex items-center">
+                        <i class="fa-solid fa-lightbulb text-amber-600 mr-1.5"></i>安心ポイント
+                    </p>
+                    <ul class="list-disc list-inside text-amber-800 space-y-0.5 pl-1">
+                        <li>和暦（例: R6.9.25、令和6年9月25日）や「2026/09/25」形式も自動認識されます。</li>
+                        <li>窓口売上は「現金／保険窓口売上」、請求額は「未収療養費／療養費売上」として自動で適切な勘定科目で記帳されます。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeRececonGuide()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl shadow transition text-xs">
+                理解しました（閉じる）
+            </button>
+        </div>
+    </div>
+
+    <!-- GAS連携 使い方ガイド モーダル -->
+    <div id="gas-guide-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-extrabold text-slate-800 flex items-center">
+                    <i class="fa-brands fa-google-drive text-emerald-600 mr-2 text-xl"></i>GAS連携（スプレッドシート自動同期）ガイド
+                </h3>
+                <button onclick="closeGasGuide()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-700 leading-relaxed">
+                <div class="bg-emerald-50 text-emerald-900 p-3.5 rounded-xl border border-emerald-200 space-y-1">
+                    <p class="font-bold flex items-center text-sm">
+                        <i class="fa-solid fa-shield-halved text-emerald-600 mr-1.5"></i>なぜGAS連携をおすすめするのか？
+                    </p>
+                    <p class="text-xs text-emerald-800 leading-relaxed">
+                        本アプリの通常データはご使用の端末内にのみ保存されます。GAS連携（Google Apps Script）を設定すると、<strong>仕訳を登録した瞬間にGoogleスプレッドシート（クラウド）へ自動保存</strong>されるため、PCとスマホ間でのデータリアルタイム共有や、故障・機種変更時の100%安全なデータ保護が実現できます。
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-800 text-sm border-l-4 border-brand-600 pl-2">導入5ステップ（5分で完了）</h4>
+                    
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">1</span>
+                        <div>
+                            <p class="font-bold text-slate-800">Googleスプレッドシートを準備</p>
+                            <p class="text-slate-500">Googleドライブを開き、新規で「スプレッドシート」を作成します（ファイル名は自由です）。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">2</span>
+                        <div>
+                            <p class="font-bold text-slate-800">Apps Script を起動</p>
+                            <p class="text-slate-500">上部メニューの「拡張機能」&gt;「Apps Script」をクリックしてエディタを開きます。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">3</span>
+                        <div>
+                            <p class="font-bold text-slate-800">コードをコピー＆ペースト</p>
+                            <p class="text-slate-500">アプリ内の「コードをコピー」ボタンを押し、表示されている既存コードを全て上書きで貼り付けます。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">4</span>
+                        <div>
+                            <p class="font-bold text-slate-800">ウェブアプリとしてデプロイ</p>
+                            <p class="text-slate-500">「デプロイ」&gt;「新しいデプロイ」を選択し、種類を「ウェブアプリ」、アクセスできるユーザーを<strong>「全員 (Anyone)」</strong>に設定して完了します。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-start">
+                        <span class="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">5</span>
+                        <div>
+                            <p class="font-bold text-slate-800">URLをアプリに設定</p>
+                            <p class="text-slate-500">発行された「ウェブアプリ URL」をコピーし、本アプリの「GAS WebアプリURL」欄に貼り付けて設定保存します。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-1">
+                    <p class="font-bold text-amber-900 flex items-center">
+                        <i class="fa-solid fa-circle-info text-amber-600 mr-1.5"></i>補足と安心ポイント
+                    </p>
+                    <ul class="list-disc list-inside text-amber-800 space-y-0.5 pl-1">
+                        <li>初回デプロイ時にGoogleからアクセス許可（承認）を求められる場合は「詳細」&gt;「安全ではないページに移動」から許可を行ってください。</li>
+                        <li>「仕訳追加時にリアルタイム自動転送する」をチェックしておくと、登録のたびに背景でスプレッドシートに追記されます。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeGasGuide()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl shadow transition text-xs">
+                理解しました（閉じる）
+            </button>
+        </div>
+    </div>
+
+    <!-- インタースティシャル広告モーダル -->
+    <div id="interstitial-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl relative">
+            <div class="text-right">
+                <button id="close-interstitial-btn" onclick="closeInterstitial()" disabled class="text-xs bg-slate-200 text-slate-500 px-3 py-1 rounded-full font-bold">
+                    スキップ (<span id="ad-countdown">5</span>s)
+                </button>
+            </div>
+
+            <div class="my-6 space-y-3">
+                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">おすすめの施術所支援サービス</span>
+                <h3 class="text-lg font-extrabold text-slate-800">整骨院向け自費移行・集客セミナー</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    保険請求頼みから脱却！自費リピート率80%超を達成する最新の施術アプローチ＆WEB集客ノウハウを期間限定公開中。
+                </p>
+                <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
+                    <i class="fa-solid fa-award text-3xl text-amber-500 mb-2"></i>
+                    <p class="text-xs font-bold text-slate-700">全国500院以上が導入・成功事例多数！</p>
+                </div>
+            </div>
+
+            <button onclick="showToast('無料セミナーの詳細ページを開きます（デモ）', 'info'); closeInterstitial();" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-xs">
+                無料セミナーの詳細を見る
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // PWA Web App Manifest の動的登録 (Google Playストア / PWABuilder / Bubblewrap 完全適合)
+        (function registerManifest() {
+            const manifest = {
+                id: "jp.seikotsuin.chobo.app",
+                name: "整骨院・接骨院 青色申告・確定申告帳簿",
+                short_name: "整骨院帳簿",
+                description: "施術所専用の複式簿記・確定申告・レセコンCSV取込・青色申告帳簿アプリ",
+                start_url: "./index.html",
+                scope: "./",
+                display: "standalone",
+                display_override: ["standalone", "minimal-ui"],
+                orientation: "any",
+                background_color: "#f8fafc",
+                theme_color: "#047857",
+                categories: ["finance", "business", "medical"],
+                prefer_related_applications: false,
+                icons: [
+                    {
+                        src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23047857'/><path fill='%23ffffff' d='M256 80c-22.1 0-40 17.9-40 40v96H120c-22.1 0-40 17.9-40 40s17.9 40 40 40h96v96c0 22.1 17.9 40 40 40s40-17.9 40-40V296h96c22.1 0 40-17.9 40-40s-17.9-40-40-40H296V120c0-22.1-17.9-40-40-40z'/></svg>",
+                        sizes: "512x512",
+                        type: "image/svg+xml",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+            try {
+                const stringManifest = JSON.stringify(manifest);
+                const blob = new Blob([stringManifest], {type: 'application/json'});
+                const manifestURL = URL.createObjectURL(blob);
+                const link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = manifestURL;
+                document.head.appendChild(link);
+            } catch(e) {
+                console.warn("Manifest generation fallback:", e);
+            }
+        })();
+
+        // Service Worker の動的登録 (Firebase Hosting & TWA でのエラー防止構造)
+        if ('serviceWorker' in navigator && location.protocol === 'https:') {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'seikotsuin-app-v1';
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', (e) => {
+                        e.waitUntil(self.clients.claim());
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        if (e.request.method !== 'GET') return;
+                        e.respondWith(
+                            fetch(e.request).catch(() => caches.match(e.request))
+                        );
+                    });
+                `;
+                try {
+                    const blob = new Blob([swCode], { type: 'text/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl, { scope: './' }).catch(err => {
+                        console.debug('SW Registration handled:', err);
+                    });
+                } catch(e) {
+                    console.debug('ServiceWorker init bypassed:', e);
+                }
+            });
+        }
+    </script>
+
+    <script>
+        const DB_JOURNAL_KEY = 'seikotsuin_journal_db';
+        const DB_ACCOUNTS_KEY = 'seikotsuin_accounts_db';
+        const GAS_URL_KEY = 'seikotsuin_gas_url';
+        const GAS_AUTO_SYNC_KEY = 'seikotsuin_auto_sync';
+        const HIDE_NOTICE_MODAL_KEY = 'seikotsuin_hide_notice_modal';
+
+        const DEFAULT_ACCOUNTS = {
+            '売上': ['保険窓口売上', '自費施術売上', '療養費売上', '雑収入'],
+            '経費': ['衛生材料費', '地代家賃', '水道光熱費', '通信費', '広告宣伝費', '支払手数料', '賃借料', '消耗品費', '旅費交通費', '福利厚生費', '雑費'],
+            '資産': ['現金', '普通預金', '売掛金', '未収療養費'],
+            '負債': ['買掛金', '未払金', '借入金'],
+            '資本': ['事業主貸', '事業主借', '元入金']
+        };
+
+        const PRESETS = {
+            '窓口現金売上': { debit: '現金', credit: '保険窓口売上', desc: '窓口保険一部負担金合計（現金）' },
+            '窓口クレカ売上': { debit: '売掛金', credit: '保険窓口売上', desc: '窓口保険一部負担金（クレジットカード決済）' },
+            'キャッシュレス自費売上': { debit: '売掛金', credit: '自費施術売上', desc: '自費施術（PayPay/クレカ決済）' },
+            'クレカ振込入金': { debit: '普通預金', credit: '売掛金', desc: '決済会社より売掛金振り込み入金' },
+            '療養費請求（月末）': { debit: '未収療養費', credit: '療養費売上', desc: '当月提出分療養費支給申請書合計' },
+            '療養費振込入金': { debit: '普通預金', credit: '未収療養費', desc: '国保・協会けんぽ療養費振り込み入金' },
+            '衛生材料費仕入': { debit: '衛生材料費', credit: '現金', desc: 'テーピング・包帯・衛生用品購入' },
+            '店舗家賃': { debit: '地代家賃', credit: '普通預金', desc: '店舗家賃口座振替' },
+            '事業主貸': { debit: '事業主貸', credit: '普通預金', desc: '事業主生活費引き出し' },
+            '事業主借': { debit: '普通預金', credit: '事業主借', desc: '事業用口座へ個人資金の補典' }
+        };
+
+        let journalData = [];
+        let accountMaster = {};
+        let actionCounter = 0;
+        let parsedCsvRows = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initData();
+            checkNoticeModal();
+            document.getElementById('entry-date').valueAsDate = new Date();
+            renderAccountSelects();
+            renderJournal();
+            initReportYearOptions();
+            renderReports();
+            renderAccountManagement();
+            initGasSettings();
+            initCsvReader();
+        });
+
+        // カスタムToast表示関数
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-700' : type === 'error' ? 'bg-rose-700' : 'bg-slate-800';
+            const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info';
+            
+            toast.className = `${bgClass} text-white text-xs px-4 py-3 rounded-lg shadow-lg flex items-center justify-between gap-3 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid ${icon} text-sm"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-white ml-2"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // カスタム確認ダイアログ
+        function showConfirmModal(title, message, onOk) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-msg').innerText = message;
+            
+            const btnOk = document.getElementById('confirm-modal-btn-ok');
+            const btnCancel = document.getElementById('confirm-modal-btn-cancel');
+            
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                btnOk.onclick = null;
+                btnCancel.onclick = null;
+            };
+
+            btnOk.onclick = () => {
+                cleanup();
+                onOk();
+            };
+
+            btnCancel.onclick = () => {
+                cleanup();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function initData() {
+            try {
+                const savedJournal = localStorage.getItem(DB_JOURNAL_KEY);
+                journalData = savedJournal ? JSON.parse(savedJournal) : [];
+
+                const savedAccounts = localStorage.getItem(DB_ACCOUNTS_KEY);
+                accountMaster = savedAccounts ? JSON.parse(savedAccounts) : DEFAULT_ACCOUNTS;
+                
+                if (!accountMaster['経費'].includes('支払手数料')) {
+                    accountMaster['経費'].push('支払手数料');
+                }
+            } catch(e) {
+                console.error("データの読み込みエラー:", e);
+                journalData = [];
+                accountMaster = DEFAULT_ACCOUNTS;
+            }
+        }
+
+        function checkNoticeModal() {
+            const hideModal = localStorage.getItem(HIDE_NOTICE_MODAL_KEY);
+            if (!hideModal) {
+                document.getElementById('notice-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeNoticeModal(neverShowAgain) {
+            document.getElementById('notice-modal').classList.add('hidden');
+            if (neverShowAgain) {
+                localStorage.setItem(HIDE_NOTICE_MODAL_KEY, 'true');
+            }
+        }
+
+        function saveJournalData() {
+            try {
+                localStorage.setItem(DB_JOURNAL_KEY, JSON.stringify(journalData));
+            } catch(e) {
+                showToast("データの保存に失敗しました。端末の空き容量を確認してください。", "error");
+            }
+            initReportYearOptions();
+        }
+
+        function saveAccountMaster() {
+            localStorage.setItem(DB_ACCOUNTS_KEY, JSON.stringify(accountMaster));
+            renderAccountSelects();
+            renderAccountManagement();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-brand-600', 'text-brand-700', 'font-bold');
+                el.classList.add('border-transparent', 'text-slate-600');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('border-brand-600', 'text-brand-700', 'font-bold');
+                activeBtn.classList.remove('border-transparent', 'text-slate-600');
+            }
+
+            if (tabId === 'report') renderReports();
+            if (tabId === 'journal') renderJournal();
+        }
+
+        function renderAccountSelects() {
+            const debitSelect = document.getElementById('entry-debit');
+            const creditSelect = document.getElementById('entry-credit');
+            
+            debitSelect.innerHTML = '';
+            creditSelect.innerHTML = '';
+
+            for (const category in accountMaster) {
+                const groupDebit = document.createElement('optgroup');
+                groupDebit.label = `【${category}】`;
+                const groupCredit = document.createElement('optgroup');
+                groupCredit.label = `【${category}】`;
+
+                accountMaster[category].forEach(acc => {
+                    groupDebit.appendChild(new Option(acc, acc));
+                    groupCredit.appendChild(new Option(acc, acc));
+                });
+
+                debitSelect.appendChild(groupDebit);
+                creditSelect.appendChild(groupCredit);
+            }
+        }
+
+        function applyPreset(presetName) {
+            const preset = PRESETS[presetName];
+            if (!preset) return;
+
+            document.getElementById('entry-debit').value = preset.debit;
+            document.getElementById('entry-credit').value = preset.credit;
+            document.getElementById('entry-desc').value = preset.desc;
+            document.getElementById('entry-amount').focus();
+            showToast(`プリセット「${presetName}」を反映しました`, 'info');
+        }
+
+        function handleJournalSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('entry-id').value || Date.now();
+            const date = document.getElementById('entry-date').value;
+            const amount = parseInt(document.getElementById('entry-amount').value, 10);
+            const debit = document.getElementById('entry-debit').value;
+            const credit = document.getElementById('entry-credit').value;
+            const desc = document.getElementById('entry-desc').value;
+
+            const entry = { id: Number(id), date, amount, debit, credit, desc };
+
+            const existingIndex = journalData.findIndex(item => item.id === entry.id);
+            if (existingIndex >= 0) {
+                journalData[existingIndex] = entry;
+                showToast("仕訳データを更新しました", "success");
+            } else {
+                journalData.push(entry);
+                triggerGasSync(entry);
+                showToast("仕訳データを登録しました", "success");
+            }
+
+            saveJournalData();
+            resetForm();
+            renderJournal();
+            checkAndTriggerAd();
+        }
+
+        function resetForm() {
+            document.getElementById('journal-form').reset();
+            document.getElementById('entry-id').value = '';
+            document.getElementById('entry-date').valueAsDate = new Date();
+            document.getElementById('edit-indicator').classList.add('hidden');
+            document.getElementById('btn-cancel').classList.add('hidden');
+            document.getElementById('btn-save').innerHTML = '<i class="fa-solid fa-check mr-2"></i>仕訳を登録する';
+        }
+
+        function initCsvReader() {
+            const fileInput = document.getElementById('csv-file-input');
+            if (!fileInput) return;
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const text = event.target.result;
+                    parseCsvText(text);
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        function parseCsvText(text) {
+            const lines = text.split(/\r\n|\n/);
+            parsedCsvRows = [];
+
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                let row = [];
+                let inQuotes = false;
+                let entry = '';
+                for (let i = 0; i < line.length; i++) {
+                    let char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(entry.trim().replace(/^"|"$/g, ''));
+                        entry = '';
+                    } else {
+                        entry += char;
+                    }
+                }
+                row.push(entry.trim().replace(/^"|"$/g, ''));
+                parsedCsvRows.push(row);
+            });
+
+            if (parsedCsvRows.length < 2) {
+                showToast('有効なCSVデータが見つかりませんでした（行数が不足しています）。', 'error');
+                return;
+            }
+
+            const headers = parsedCsvRows[0];
+            setupMappingSelects(headers);
+            renderCsvPreview(headers, parsedCsvRows.slice(1, 6));
+
+            document.getElementById('mapping-container').classList.remove('hidden');
+            document.getElementById('csv-preview-wrapper').classList.remove('hidden');
+        }
+
+        function setupMappingSelects(headers) {
+            const selects = ['map-col-date', 'map-col-window', 'map-col-insurance', 'map-col-self'];
+            selects.forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = id === 'map-col-self' ? '<option value="">(紐付けなし)</option>' : '';
+                headers.forEach((h, index) => {
+                    sel.appendChild(new Option(`${index}: ${h}`, index));
+                });
+            });
+
+            headers.forEach((h, index) => {
+                const lower = h.toLowerCase();
+                if (lower.includes('日付') || lower.includes('日') || lower.includes('date')) {
+                    document.getElementById('map-col-date').value = index;
+                }
+                if (lower.includes('窓口') || lower.includes('現金') || lower.includes('一部負担')) {
+                    document.getElementById('map-col-window').value = index;
+                }
+                if (lower.includes('保険') || lower.includes('レセ') || lower.includes('請求')) {
+                    document.getElementById('map-col-insurance').value = index;
+                }
+                if (lower.includes('自費') || lower.includes('自由')) {
+                    document.getElementById('map-col-self').value = index;
+                }
+            });
+        }
+
+        function renderCsvPreview(headers, rows) {
+            const table = document.getElementById('csv-preview-table');
+            let html = '<thead><tr class="bg-slate-100 text-slate-600 border-b">';
+            headers.forEach(h => html += `<th class="p-2">${h}</th>`);
+            html += '</tr></thead><tbody>';
+
+            rows.forEach(r => {
+                html += '<tr class="border-b border-slate-100">';
+                headers.forEach((_, i) => {
+                    html += `<td class="p-2 text-slate-700">${r[i] !== undefined ? r[i] : ''}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function normalizeDateString(raw) {
+            if (!raw) return new Date().toISOString().slice(0, 10);
+            let clean = raw.trim().replace(/年|月/g, '-').replace(/日/g, '');
+            
+            let reiwaMatch = clean.match(/^(令和|R)?\s*(\d{1,2})[\.\/-](\d{1,2})[\.\/-](\d{1,2})$/i);
+            if (reiwaMatch) {
+                let rYear = parseInt(reiwaMatch[2], 10);
+                let fullYear = 2018 + rYear;
+                let month = reiwaMatch[3].padStart(2, '0');
+                let day = reiwaMatch[4].padStart(2, '0');
+                return `${fullYear}-${month}-${day}`;
+            }
+
+            clean = clean.replace(/\//g, '-').replace(/\./g, '-');
+            let parts = clean.split('-');
+            if (parts.length === 3) {
+                let y = parts[0].padStart(4, '20');
+                let m = parts[1].padStart(2, '0');
+                let d = parts[2].padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function executeCsvImport() {
+            const dateCol = parseInt(document.getElementById('map-col-date').value, 10);
+            const windowCol = document.getElementById('map-col-window').value !== "" ? parseInt(document.getElementById('map-col-window').value, 10) : null;
+            const insCol = document.getElementById('map-col-insurance').value !== "" ? parseInt(document.getElementById('map-col-insurance').value, 10) : null;
+            const selfCol = document.getElementById('map-col-self').value !== "" ? parseInt(document.getElementById('map-col-self').value, 10) : null;
+
+            if (isNaN(dateCol)) {
+                showToast('【日付】の列は必須です。選択してください。', 'error');
+                return;
+            }
+
+            const dataRows = parsedCsvRows.slice(1);
+            let importedCount = 0;
+
+            dataRows.forEach((row, idx) => {
+                let rawDate = row[dateCol];
+                if (!rawDate) return;
+
+                let normalizedDate = normalizeDateString(rawDate);
+
+                if (windowCol !== null && row[windowCol]) {
+                    let amt = parseInt(row[windowCol].replace(/[^\d]/g, ''), 10);
+                    if (!isNaN(amt) && amt > 0) {
+                        journalData.push({
+                            id: Date.now() + idx + Math.random(),
+                            date: normalizedDate,
+                            amount: amt,
+                            debit: '現金',
+                            credit: '保険窓口売上',
+                            desc: 'レセコンCSV一括インポート（窓口売上）'
+                        });
+                        importedCount++;
+                    }
+                }
+
+                if (insCol !== null && row[insCol]) {
+                    let amt = parseInt(row[insCol].replace(/[^\d]/g, ''), 10);
+                    if (!isNaN(amt) && amt > 0) {
+                        journalData.push({
+                            id: Date.now() + idx + Math.random() + 1,
+                            date: normalizedDate,
+                            amount: amt,
+                            debit: '未収療養費',
+                            credit: '療養費売上',
+                            desc: 'レセコンCSV一括インポート（保険請求）'
+                        });
+                        importedCount++;
+                    }
+                }
+
+                if (selfCol !== null && row[selfCol]) {
+                    let amt = parseInt(row[selfCol].replace(/[^\d]/g, ''), 10);
+                    if (!isNaN(amt) && amt > 0) {
+                        journalData.push({
+                            id: Date.now() + idx + Math.random() + 2,
+                            date: normalizedDate,
+                            amount: amt,
+                            debit: '現金',
+                            credit: '自費施術売上',
+                            desc: 'レセコンCSV一括インポート（自費診療）'
+                        });
+                        importedCount++;
+                    }
+                }
+            });
+
+            saveJournalData();
+            renderJournal();
+            showToast(`インポート完了: ${importedCount}件の仕訳が追加されました。`, 'success');
+            switchTab('journal');
+        }
+
+        function renderJournal() {
+            const tbody = document.getElementById('journal-table-body');
+            tbody.innerHTML = '';
+
+            const keyword = document.getElementById('search-keyword').value.toLowerCase();
+            const startDate = document.getElementById('search-start-date').value;
+            const endDate = document.getElementById('search-end-date').value;
+
+            let filtered = journalData.filter(item => {
+                const matchesKeyword = item.debit.toLowerCase().includes(keyword) ||
+                                       item.credit.toLowerCase().includes(keyword) ||
+                                       (item.desc && item.desc.toLowerCase().includes(keyword));
+                const matchesStart = !startDate || item.date >= startDate;
+                const matchesEnd = !endDate || item.date <= endDate;
+                return matchesKeyword && matchesStart && matchesEnd;
+            });
+
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">仕訳データが見つかりません</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+                tr.innerHTML = `
+                    <td class="p-2.5 whitespace-nowrap font-medium text-slate-700">${item.date}</td>
+                    <td class="p-2.5 text-brand-700 font-bold">${item.debit}</td>
+                    <td class="p-2.5 text-right font-extrabold text-slate-800">¥${item.amount.toLocaleString()}</td>
+                    <td class="p-2.5 text-blue-700 font-bold">${item.credit}</td>
+                    <td class="p-2.5 text-slate-600 max-w-xs truncate">${item.desc || '-'}</td>
+                    <td class="p-2.5 text-center whitespace-nowrap no-print">
+                        <button onclick="editEntry(${item.id})" class="text-slate-400 hover:text-brand-600 mr-2"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteEntry(${item.id})" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function editEntry(id) {
+            const entry = journalData.find(item => item.id === id);
+            if (!entry) return;
+
+            document.getElementById('entry-id').value = entry.id;
+            document.getElementById('entry-date').value = entry.date;
+            document.getElementById('entry-amount').value = entry.amount;
+            document.getElementById('entry-debit').value = entry.debit;
+            document.getElementById('entry-credit').value = entry.credit;
+            document.getElementById('entry-desc').value = entry.desc;
+
+            document.getElementById('edit-indicator').classList.remove('hidden');
+            document.getElementById('btn-cancel').classList.remove('hidden');
+            document.getElementById('btn-save').innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>仕訳を更新する';
+
+            switchTab('input');
+        }
+
+        function deleteEntry(id) {
+            showConfirmModal('仕訳の削除', 'この仕訳を削除してもよろしいですか？', () => {
+                journalData = journalData.filter(item => item.id !== id);
+                saveJournalData();
+                renderJournal();
+                showToast('仕訳を削除しました', 'info');
+            });
+        }
+
+        function confirmClearAll() {
+            showConfirmModal('全データ消去', 'すべての仕訳データが消去されます。事前にJSONバックアップを取ることを推奨します。本当によろしいですか？', () => {
+                journalData = [];
+                saveJournalData();
+                renderJournal();
+                showToast('すべての仕訳データを消去しました', 'info');
+            });
+        }
+
+        function exportJSONBackup() {
+            if (journalData.length === 0) {
+                showToast('バックアップ対象のデータがありません。', 'error');
+                return;
+            }
+            const backupPayload = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                accounts: accountMaster,
+                journal: journalData
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPayload, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `整骨院帳簿_バックアップ_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            showToast('JSONバックアップファイルを出力しました', 'success');
+        }
+
+        function importJSONBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.journal && Array.isArray(data.journal)) {
+                        showConfirmModal('復元の確認', `既存のデータに上書き復元しますか？（仕訳件数: ${data.journal.length}件）`, () => {
+                            journalData = data.journal;
+                            if (data.accounts) accountMaster = data.accounts;
+                            saveJournalData();
+                            saveAccountMaster();
+                            renderJournal();
+                            showToast('データの復元が完了いたしました！', 'success');
+                        });
+                    } else {
+                        showToast('無効なバックアップファイル形式です。', 'error');
+                    }
+                } catch(err) {
+                    showToast('ファイルの読み込みに失敗しました。正しいJSONバックアップファイルを選択してください。', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function initReportYearOptions() {
+            const yearSelect = document.getElementById('report-year');
+            const currentYear = new Date().getFullYear();
+            
+            const dataYears = journalData.map(item => parseInt(item.date.split('-')[0], 10));
+            const allYears = new Set([currentYear - 1, currentYear, currentYear + 1, ...dataYears]);
+            const sortedYears = Array.from(allYears).sort((a, b) => b - a);
+
+            const selectedVal = yearSelect.value || currentYear.toString();
+            yearSelect.innerHTML = '';
+            
+            sortedYears.forEach(y => {
+                yearSelect.appendChild(new Option(`${y}年度`, y.toString()));
+            });
+
+            if (sortedYears.includes(parseInt(selectedVal, 10))) {
+                yearSelect.value = selectedVal;
+            } else {
+                yearSelect.value = currentYear.toString();
+            }
+        }
+
+        function calculateAccountBalances(filteredEntries) {
+            const balances = {};
+            Object.values(accountMaster).flat().forEach(acc => balances[acc] = 0);
+
+            filteredEntries.forEach(entry => {
+                const debitAcc = entry.debit;
+                const creditAcc = entry.credit;
+                const amt = entry.amount;
+
+                const getCategory = (acc) => {
+                    for (let cat in accountMaster) {
+                        if (accountMaster[cat].includes(acc)) return cat;
+                    }
+                    return null;
+                };
+
+                const debitCat = getCategory(debitAcc);
+                const creditCat = getCategory(creditAcc);
+
+                if (debitCat === '資産' || debitCat === '経費' || debitAcc === '事業主貸') {
+                    balances[debitAcc] = (balances[debitAcc] || 0) + amt;
+                } else if (debitCat === '負債' || debitCat === '売上' || debitCat === '資本') {
+                    balances[debitAcc] = (balances[debitAcc] || 0) - amt;
+                } else {
+                    balances[debitAcc] = (balances[debitAcc] || 0) + amt;
+                }
+
+                if (creditCat === '売上' || creditCat === '負債' || creditCat === '資本') {
+                    balances[creditAcc] = (balances[creditAcc] || 0) + amt;
+                } else if (creditCat === '資産' || creditCat === '経費' || creditAcc === '事業主貸') {
+                    balances[creditAcc] = (balances[creditAcc] || 0) - amt;
+                } else {
+                    balances[creditAcc] = (balances[creditAcc] || 0) + amt;
+                }
+            });
+
+            return balances;
+        }
+
+        function renderReports() {
+            const selectedYear = document.getElementById('report-year').value;
+            const selectedMonth = document.getElementById('report-month').value;
+
+            const yearFiltered = journalData.filter(item => {
+                const [y] = item.date.split('-');
+                return y === selectedYear;
+            });
+
+            renderMonthlyMatrix(yearFiltered);
+
+            const monthFiltered = yearFiltered.filter(item => {
+                const [, m] = item.date.split('-');
+                return selectedMonth === 'all' || m === selectedMonth;
+            });
+
+            const balances = calculateAccountBalances(monthFiltered);
+
+            let totalRevenue = 0;
+            const revBody = document.getElementById('pl-revenue-body');
+            revBody.innerHTML = '';
+            accountMaster['売上'].forEach(acc => {
+                const amt = balances[acc] || 0;
+                totalRevenue += amt;
+                revBody.innerHTML += `<tr><td class="p-2 text-slate-700">${acc}</td><td class="p-2 text-right font-medium">¥${amt.toLocaleString()}</td></tr>`;
+            });
+            document.getElementById('pl-total-revenue').innerText = `¥${totalRevenue.toLocaleString()}`;
+
+            let totalExpenses = 0;
+            const expBody = document.getElementById('pl-expenses-body');
+            expBody.innerHTML = '';
+            accountMaster['経費'].forEach(acc => {
+                const amt = balances[acc] || 0;
+                totalExpenses += amt;
+                expBody.innerHTML += `<tr><td class="p-2 text-slate-700">${acc}</td><td class="p-2 text-right font-medium">¥${amt.toLocaleString()}</td></tr>`;
+            });
+            document.getElementById('pl-total-expenses').innerText = `¥${totalExpenses.toLocaleString()}`;
+
+            const netIncome = totalRevenue - totalExpenses;
+            document.getElementById('pl-net-income').innerText = `¥${netIncome.toLocaleString()}`;
+
+            const blueDeductionVal = parseInt(document.getElementById('blue-deduction-select').value, 10) || 0;
+            const taxableIncome = Math.max(0, netIncome - blueDeductionVal);
+            document.getElementById('taxable-income-result').innerText = `¥${taxableIncome.toLocaleString()}`;
+
+            let totalAssets = 0;
+            const astBody = document.getElementById('bs-assets-body');
+            astBody.innerHTML = '';
+            accountMaster['資産'].forEach(acc => {
+                const amt = balances[acc] || 0;
+                totalAssets += amt;
+                astBody.innerHTML += `<tr><td class="p-2 text-slate-700">${acc}</td><td class="p-2 text-right font-medium">¥${amt.toLocaleString()}</td></tr>`;
+            });
+            document.getElementById('bs-total-assets').innerText = `¥${totalAssets.toLocaleString()}`;
+
+            let totalLiabCap = 0;
+            const liabBody = document.getElementById('bs-liabilities-body');
+            liabBody.innerHTML = '';
+            [...accountMaster['負債'], ...accountMaster['資本']].forEach(acc => {
+                const amt = balances[acc] || 0;
+                totalLiabCap += amt;
+                liabBody.innerHTML += `<tr><td class="p-2 text-slate-700">${acc}</td><td class="p-2 text-right font-medium">¥${amt.toLocaleString()}</td></tr>`;
+            });
+            document.getElementById('bs-total-liabilities').innerText = `¥${totalLiabCap.toLocaleString()}`;
+        }
+
+        function renderMonthlyMatrix(yearData) {
+            const tbody = document.getElementById('monthly-matrix-body');
+            tbody.innerHTML = '';
+
+            const matrix = {};
+            const categories = ['売上', '経費'];
+            
+            categories.forEach(cat => {
+                accountMaster[cat].forEach(acc => {
+                    matrix[acc] = Array(12).fill(0);
+                });
+            });
+
+            yearData.forEach(item => {
+                const [, mStr] = item.date.split('-');
+                const mIdx = parseInt(mStr, 10) - 1;
+                if (mIdx < 0 || mIdx >= 12) return;
+
+                if (accountMaster['売上'].includes(item.credit)) {
+                    matrix[item.credit][mIdx] += item.amount;
+                }
+                if (accountMaster['売上'].includes(item.debit)) {
+                    matrix[item.debit][mIdx] -= item.amount;
+                }
+
+                if (accountMaster['経費'].includes(item.debit)) {
+                    matrix[item.debit][mIdx] += item.amount;
+                }
+                if (accountMaster['経費'].includes(item.credit)) {
+                    matrix[item.credit][mIdx] -= item.amount;
+                }
+            });
+
+            tbody.innerHTML += `
+                <tr class="bg-emerald-50/70 font-bold text-emerald-800">
+                    <td colspan="14" class="p-2 sticky-col-header bg-emerald-50/90"><i class="fa-solid fa-coins mr-1"></i> 【売上の部】</td>
+                </tr>
+            `;
+
+            let monthlyRevSums = Array(12).fill(0);
+            accountMaster['売上'].forEach(acc => {
+                const months = matrix[acc] || Array(12).fill(0);
+                const sum = months.reduce((a, b) => a + b, 0);
+                months.forEach((amt, idx) => monthlyRevSums[idx] += amt);
+
+                let cells = months.map(amt => `<td class="p-2 text-right text-slate-600 whitespace-nowrap">${amt ? '¥' + amt.toLocaleString() : '-'}</td>`).join('');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2 font-medium text-slate-700 sticky-col shadow-sm whitespace-nowrap">${acc}</td>
+                        ${cells}
+                        <td class="p-2 text-right font-bold text-slate-800 bg-slate-100/50 whitespace-nowrap">¥${sum.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            const totalRevSum = monthlyRevSums.reduce((a, b) => a + b, 0);
+            let revSumCells = monthlyRevSums.map(amt => `<td class="p-2 text-right font-bold text-emerald-700 whitespace-nowrap">¥${amt.toLocaleString()}</td>`).join('');
+            tbody.innerHTML += `
+                <tr class="bg-emerald-100/40 font-bold border-t border-b border-emerald-200">
+                    <td class="p-2 text-emerald-800 sticky-col-header bg-emerald-100/60 shadow-sm whitespace-nowrap">売上高 小計</td>
+                    ${revSumCells}
+                    <td class="p-2 text-right font-extrabold text-emerald-800 bg-emerald-200/50 whitespace-nowrap">¥${totalRevSum.toLocaleString()}</td>
+                </tr>
+            `;
+
+            tbody.innerHTML += `
+                <tr class="bg-rose-50/70 font-bold text-rose-800">
+                    <td colspan="14" class="p-2 sticky-col-header bg-rose-50/90"><i class="fa-solid fa-receipt mr-1"></i> 【必要経費の部】</td>
+                </tr>
+            `;
+
+            let monthlyExpSums = Array(12).fill(0);
+            accountMaster['経費'].forEach(acc => {
+                const months = matrix[acc] || Array(12).fill(0);
+                const sum = months.reduce((a, b) => a + b, 0);
+                months.forEach((amt, idx) => monthlyExpSums[idx] += amt);
+
+                let cells = months.map(amt => `<td class="p-2 text-right text-slate-600 whitespace-nowrap">${amt ? '¥' + amt.toLocaleString() : '-'}</td>`).join('');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2 font-medium text-slate-700 sticky-col shadow-sm whitespace-nowrap">${acc}</td>
+                        ${cells}
+                        <td class="p-2 text-right font-bold text-slate-800 bg-slate-100/50 whitespace-nowrap">¥${sum.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            const totalExpSum = monthlyExpSums.reduce((a, b) => a + b, 0);
+            let expSumCells = monthlyExpSums.map(amt => `<td class="p-2 text-right font-bold text-rose-700 whitespace-nowrap">¥${amt.toLocaleString()}</td>`).join('');
+            tbody.innerHTML += `
+                <tr class="bg-rose-100/40 font-bold border-t border-b border-rose-200">
+                    <td class="p-2 text-rose-800 sticky-col-header bg-rose-100/60 shadow-sm whitespace-nowrap">必要経費 小計</td>
+                    ${expSumCells}
+                    <td class="p-2 text-right font-extrabold text-rose-800 bg-rose-200/50 whitespace-nowrap">¥${totalExpSum.toLocaleString()}</td>
+                </tr>
+            `;
+
+            let monthlyNetSums = monthlyRevSums.map((rev, idx) => rev - monthlyExpSums[idx]);
+            const totalNetSum = totalRevSum - totalExpSum;
+            let netSumCells = monthlyNetSums.map(amt => `<td class="p-2 text-right font-bold ${amt >= 0 ? 'text-brand-700' : 'text-rose-600'} whitespace-nowrap">¥${amt.toLocaleString()}</td>`).join('');
+            tbody.innerHTML += `
+                <tr class="bg-brand-100/60 font-bold border-t-2 border-brand-500">
+                    <td class="p-2 text-brand-900 sticky-col-header bg-brand-100/80 shadow-sm whitespace-nowrap">差引所得（利益）</td>
+                    ${netSumCells}
+                    <td class="p-2 text-right font-extrabold text-brand-800 bg-brand-200/70 whitespace-nowrap">¥${totalNetSum.toLocaleString()}</td>
+                </tr>
+            `;
+        }
+
+        function renderAccountManagement() {
+            const container = document.getElementById('account-lists-container');
+            container.innerHTML = '';
+
+            for (const category in accountMaster) {
+                const div = document.createElement('div');
+                div.className = 'bg-slate-50 p-4 rounded-lg border border-slate-200';
+                
+                let listHtml = accountMaster[category].map(acc => `
+                    <li class="flex justify-between items-center py-1.5 border-b border-slate-200 text-xs">
+                        <span class="font-medium text-slate-700">${acc}</span>
+                        <button onclick="removeAccount('${category}', '${acc}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-xmark"></i></button>
+                    </li>
+                `).join('');
+
+                div.innerHTML = `
+                    <h3 class="text-xs font-bold text-slate-700 mb-2 border-b pb-1">【${category}】の科目一覧</h3>
+                    <ul class="space-y-1">${listHtml || '<li class="text-xs text-slate-400">科目がありません</li>'}</ul>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function handleAddAccount(e) {
+            e.preventDefault();
+            const category = document.getElementById('new-account-type').value;
+            const name = document.getElementById('new-account-name').value.trim();
+
+            if (!name) return;
+            if (accountMaster[category].includes(name)) {
+                showToast('その科目は既に存在します。', 'error');
+                return;
+            }
+
+            accountMaster[category].push(name);
+            saveAccountMaster();
+            document.getElementById('new-account-name').value = '';
+            showToast(`科目「${name}」を追加しました`, 'success');
+        }
+
+        function removeAccount(category, name) {
+            showConfirmModal('科目の削除', `科目「${name}」を削除しますか？`, () => {
+                accountMaster[category] = accountMaster[category].filter(a => a !== name);
+                saveAccountMaster();
+                showToast(`科目「${name}」を削除しました`, 'info');
+            });
+        }
+
+        function resetAccountMaster() {
+            showConfirmModal('初期化', '勘定科目を初期状態に戻しますか？', () => {
+                accountMaster = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+                saveAccountMaster();
+                showToast('勘定科目を初期状態にリセットしました', 'info');
+            });
+        }
+
+        function initGasSettings() {
+            const url = localStorage.getItem(GAS_URL_KEY) || '';
+            const autoSync = localStorage.getItem(GAS_AUTO_SYNC_KEY) === 'true';
+
+            document.getElementById('gas-url-input').value = url;
+            document.getElementById('gas-auto-sync').checked = autoSync;
+            updateSyncStatusBadge(autoSync && url.length > 0);
+        }
+
+        function saveGasSettings() {
+            const url = document.getElementById('gas-url-input').value.trim();
+            const autoSync = document.getElementById('gas-auto-sync').checked;
+
+            localStorage.setItem(GAS_URL_KEY, url);
+            localStorage.setItem(GAS_AUTO_SYNC_KEY, autoSync);
+
+            updateSyncStatusBadge(autoSync && url.length > 0);
+            showToast('GAS連携設定を保存しました。', 'success');
+        }
+
+        function toggleAutoSync(checked) {
+            localStorage.setItem(GAS_AUTO_SYNC_KEY, checked);
+            const url = localStorage.getItem(GAS_URL_KEY) || '';
+            updateSyncStatusBadge(checked && url.length > 0);
+        }
+
+        function updateSyncStatusBadge(active) {
+            const badge = document.getElementById('sync-status-badge');
+            if (active) {
+                badge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-sm';
+                badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1"></i>同期: ON';
+            } else {
+                badge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-600 text-slate-200 shadow-sm';
+                badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1"></i>同期: OFF';
+            }
+        }
+
+        function triggerGasSync(entry) {
+            const url = localStorage.getItem(GAS_URL_KEY);
+            const autoSync = localStorage.getItem(GAS_AUTO_SYNC_KEY) === 'true';
+
+            if (!autoSync || !url) return;
+
+            try {
+                fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(entry)
+                }).then(() => {
+                    console.log('GASへ自動送信用リクエストを送信しました。');
+                }).catch(err => {
+                    console.warn('GAS同期エラー:', err);
+                });
+            } catch(e) {
+                console.warn('GAS通信例外:', e);
+            }
+        }
+
+        function copyGasCode() {
+            const code = document.getElementById('gas-code-block').innerText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast('GASコードをクリップボードにコピーしました！', 'success');
+                }).catch(() => fallbackCopyTextToClipboard(code));
+            } else {
+                fallbackCopyTextToClipboard(code);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('GASコードをクリップボードにコピーしました！', 'success');
+                } else {
+                    showToast('コピーに失敗しました。手動でコピーしてください。', 'error');
+                }
+            } catch (err) {
+                showToast('コピーに失敗しました。手動でコピーしてください。', 'error');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function exportCSV() {
+            if (journalData.length === 0) {
+                showToast('出力するデータがありません。', 'error');
+                return;
+            }
+
+            let csvContent = "\uFEFF日付,借方科目,金額,貸方科目,摘要\n";
+            journalData.forEach(row => {
+                csvContent += `"${row.date}","${row.debit}",${row.amount},"${row.credit}","${row.desc || ''}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `仕訳帳_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('CSV仕訳帳をダウンロードしました', 'success');
+            checkAndTriggerAd();
+        }
+
+        function checkAndTriggerAd() {
+            actionCounter++;
+            if (actionCounter >= 25) {
+                showInterstitial();
+                actionCounter = 0;
+            }
+        }
+
+        function showInterstitial() {
+            const modal = document.getElementById('interstitial-modal');
+            const closeBtn = document.getElementById('close-interstitial-btn');
+            const countdownEl = document.getElementById('ad-countdown');
+            
+            modal.classList.remove('hidden');
+            closeBtn.disabled = true;
+            let count = 5;
+            countdownEl.innerText = count;
+
+            const timer = setInterval(() => {
+                count--;
+                countdownEl.innerText = count;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    closeBtn.disabled = false;
+                    closeBtn.innerText = '閉じる ×';
+                    closeBtn.classList.remove('bg-slate-200', 'text-slate-500');
+                    closeBtn.classList.add('bg-brand-600', 'text-white', 'hover:bg-brand-700');
+                }
+            }, 1000);
+        }
+
+        function closeInterstitial() {
+            document.getElementById('interstitial-modal').classList.add('hidden');
+        }
+
+        function openRececonGuide() {
+            document.getElementById('rececon-guide-modal').classList.remove('hidden');
+        }
+
+        function closeRececonGuide() {
+            document.getElementById('rececon-guide-modal').classList.add('hidden');
+        }
+
+        function openGasGuide() {
+            document.getElementById('gas-guide-modal').classList.remove('hidden');
+        }
+
+        function closeGasGuide() {
+            document.getElementById('gas-guide-modal').classList.add('hidden');
+        }
+
+        function shareToLine() {
+            const shareText = "【整骨院専用 青色申告・複式簿記帳簿アプリ】\n窓口売上・療養費請求・日々の経費をカンタン管理できる帳簿アプリです！";
+            const shareUrl = window.location.href;
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText + "\n" + shareUrl)}`;
+            window.open(lineUrl, '_blank');
+        }
+    </script>
+</body>
+</html>
